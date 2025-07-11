@@ -1,0 +1,306 @@
+rm(list = ls())
+install.packages("forecast")
+install.packages("quantmod")
+install.packages("haven")
+install.packages("dplR")
+install.packages("tseries")
+install.packages("smooth")
+install.packages("haven")
+install.packages("readxl")
+
+# Wriiten by:  Santosh Simhadri
+
+# data= sony.dta
+
+setwd("C:/Users/leela/OneDrive/Desktop/Time Series/Market Data/Market Data")
+
+library(readxl)
+
+sony_data <- read_excel("Sony.xlsx")
+
+# let us plot the closing price of the sony stock and see how it is
+
+plot(sony_data$`Average of Closing Price in that week`)
+
+par(mfrow = c(1, 2))
+
+library(ggplot2)
+ggplot(sony_data, aes(x = T, y = `Average of Closing Price in that week`)) +
+  geom_line(color = "red") +
+  labs(title = "Price over Time of Sony",
+       x = "T",
+       y = "Closing Price") +
+  theme_minimal()
+
+library(tseries)
+
+adf.test(sony_data$`Average of Closing Price in that week`)
+
+library(dplyr)
+
+sony_data <- sony_data %>%
+  mutate(closing_pricediff = `Average of Closing Price in that week` - lag(`Average of Closing Price in that week`))
+
+# now lets remove the first because it has "NA"
+
+sony_data <- sony_data[-1,]
+
+# now lets again do the agumented dickey fuller test to find out the stationarity and unit root
+
+adf.test(sony_data$closing_pricediff)
+
+ggplot(sony_data, aes(x = T, y = `closing_pricediff`)) +
+  geom_line(color = "red") +
+  labs(title = "Closing Price Diff vs T of SONY",
+       x = "T",
+       y = "Closing Price Difference") +
+  theme_minimal()
+
+acf(sony_data$closing_pricediff)
+pacf(sony_data$closing_pricediff)
+
+sony_model_1 = arima(1,1,1)
+sony_model_2 = arima(2,1,1)
+sony_model_3 = arima(2,1,2)
+sony_model_4 = arima(1,1,2)
+sony_model_5 = arima(2,1,3)
+sony_model_6 = arima(1,1,3)
+sony_model_7 = auto.arima
+
+sony_trainingset <- sony_data[1:1866,]
+
+sony_testset <- sony_data[1867:2332,]
+
+sony_traning_ts <- ts(sony_trainingset$`Average of Closing Price in that week`,start =c(1980, 32), 
+                      end = c(2016, 18), frequency = 52)
+print(sony_traning_ts)
+
+library(forecast)
+
+sony_model_1 <- arima(sony_traning_ts,order = c(1,1,1))
+sony_model_1
+
+sony_model_2 <- arima(sony_traning_ts,order = c(2,1,1))
+sony_model_2
+
+sony_model_3 <- arima(sony_traning_ts,order = c(2,1,2))
+sony_model_3
+
+sony_model_4 <- arima(sony_traning_ts,order = c(1,1,2))
+sony_model_4
+
+sony_model_5 <- arima(sony_traning_ts,order = c(2,1,3))
+sony_model_5
+
+sony_model_6 <- arima(sony_traning_ts,order = c(1,1,3))
+sony_model_6
+
+sony_model_7 <- auto.arima(sony_traning_ts)
+sony_model_7
+
+sony_forecast_model1 <- forecast(sony_model_1,h=466)
+sony_forecast_model2 <- forecast(sony_model_2,h=466)
+sony_forecast_model3 <- forecast(sony_model_3,h=466)
+sony_forecast_model4 <- forecast(sony_model_4,h=466)
+sony_forecast_model5 <- forecast(sony_model_5,h=466)
+sony_forecast_model6 <- forecast(sony_model_6,h=466)
+sony_forecast_model7 <- forecast(sony_model_7,h=466)
+
+sony_testset$sony_forecast_1 <- sony_forecast_model1$mean
+sony_testset$sony_forecast_2 <- sony_forecast_model2$mean
+sony_testset$sony_forecast_3 <- sony_forecast_model3$mean
+sony_testset$sony_forecast_4 <- sony_forecast_model4$mean
+sony_testset$sony_forecast_5 <- sony_forecast_model5$mean
+sony_testset$sony_forecast_6 <- sony_forecast_model6$mean
+sony_testset$sony_forecast_7 <- sony_forecast_model7$mean
+
+RMSE_sony_model1 <- sqrt(mean((sony_testset$`Average of Closing Price in that week`-
+                                sony_testset$sony_forecast_1)^2))
+RMSE_sony_model1
+
+RMSE_sony_model2 <- sqrt(mean((sony_testset$`Average of Closing Price in that week`-
+                                 sony_testset$sony_forecast_2)^2))
+RMSE_sony_model2
+
+RMSE_sony_model3 <- sqrt(mean((sony_testset$`Average of Closing Price in that week`-
+                                 sony_testset$sony_forecast_3)^2))
+RMSE_sony_model3
+
+RMSE_sony_model4 <- sqrt(mean((sony_testset$`Average of Closing Price in that week`-
+                                 sony_testset$sony_forecast_4)^2))
+RMSE_sony_model4
+
+RMSE_sony_model5 <- sqrt(mean((sony_testset$`Average of Closing Price in that week`-
+                                 sony_testset$sony_forecast_5)^2))
+RMSE_sony_model5
+
+RMSE_sony_model6 <- sqrt(mean((sony_testset$`Average of Closing Price in that week`-
+                                 sony_testset$sony_forecast_6)^2))
+RMSE_sony_model6
+
+RMSE_sony_model7 <- sqrt(mean((sony_testset$`Average of Closing Price in that week`- 
+                                 sony_testset$sony_forecast_7)^2))
+RMSE_sony_model7
+
+
+MAE_sony_model1 <- mean(abs(sony_testset$`Average of Closing Price in that week`- 
+                          sony_testset$sony_forecast_1))
+MAE_sony_model1
+
+
+MAE_sony_model2 <- mean(abs(sony_testset$`Average of Closing Price in that week`- 
+                          sony_testset$sony_forecast_2))
+MAE_sony_model2
+
+
+MAE_sony_model3 <- mean(abs(sony_testset$`Average of Closing Price in that week`- 
+                          sony_testset$sony_forecast_3))
+MAE_sony_model3
+
+
+MAE_sony_model4 <- mean(abs(sony_testset$`Average of Closing Price in that week`- 
+                          sony_testset$sony_forecast_4))
+MAE_sony_model4
+
+
+MAE_sony_model5 <- mean(abs(sony_testset$`Average of Closing Price in that week`- 
+                          sony_testset$sony_forecast_5))
+MAE_sony_model5
+
+
+MAE_sony_model6 <- mean(abs(sony_testset$`Average of Closing Price in that week`- 
+                          sony_testset$sony_forecast_6))
+MAE_sony_model6
+
+
+MAE_sony_model7 <- mean(abs(sony_testset$`Average of Closing Price in that week`- 
+                          sony_testset$sony_forecast_7))
+MAE_sony_model7
+
+Box.test(resid(sony_model_5), lag = 20, type = "Ljung-Box") 
+
+Box.test(resid(sony_model_7), lag = 20, type = "Ljung-Box")
+Box.test(resid(sony_model_1), lag = 20, type = "Ljung-Box")
+Box.test(resid(sony_model_2), lag = 20, type = "Ljung-Box")
+Box.test(resid(sony_model_4), lag = 20, type = "Ljung-Box")
+Box.test(resid(sony_model_5), lag = 20, type = "Ljung-Box")
+Box.test(resid(sony_model_6), lag = 20, type = "Ljung-Box")
+
+plot(resid(sony_model_5))
+acf(resid(sony_model_5))
+pacf(resid(sony_model_5))
+
+sony_model_sarima_1= arima(2,1,2)(0,0,2)[52]
+sony_model_sarima_2= arima(1,1,2)(0,0,2)[52]
+sony_model_sarima_3= arima(2,1,2)(0,1,2)[52]
+
+sony_model_sarima_1 <- arima(sony_traning_ts,order = c(2,1,2),seasonal = list(order=c(0,0,2),216))
+sony_model_sarima_1
+
+sony_model_sarima_2 <- arima(sony_traning_ts,order = c(1,1,2),seasonal = list(order=c(0,0,2),216))
+sony_model_sarima_2
+
+sony_model_sarima_3 <- arima(sony_traning_ts,order = c(2,1,2),seasonal = list(order=c(0,1,2),216))
+sony_model_sarima_3
+
+sony_forecast_sarima_model_1 <- forecast(sony_model_sarima_1,h=466)
+sony_forecast_sarima_model_2 <- forecast(sony_model_sarima_2,h=466)
+sony_forecast_sarima_model_3 <- forecast(sony_model_sarima_3,h=466)
+
+sony_testset$sony_sarima_1 <- sony_forecast_sarima_model_1$mean
+sony_testset$sony_sarima_2 <- sony_forecast_sarima_model_2$mean
+sony_testset$sony_sarima_3 <- sony_forecast_sarima_model_3$mean
+
+RMSE_sarima_1 <- sqrt(mean(sony_testset$`Average of Closing Price in that week`
+                           -sony_testset$sony_sarima_1)^2)
+RMSE_sarima_1
+
+RMSE_sarima_2 <- sqrt(mean(sony_testset$`Average of Closing Price in that week`
+                           -sony_testset$sony_sarima_2)^2)
+RMSE_sarima_2
+
+RMSE_sarima_3 <- sqrt(mean(sony_testset$`Average of Closing Price in that week`
+                           -sony_testset$sony_sarima_3)^2)
+RMSE_sarima_3
+
+resid_sarima_3 <- residuals(sony_model_sarima_3)
+plot(resid_sarima_3)
+acf(resid_sarima_3)
+pacf(resid_sarima_3)
+
+sony_set_model <- arima(sony_data$`Average of Closing Price in that week`,order = c(2,1,3))
+sony_set_model
+
+final_sony_forecast <- forecast(sony_set_model,h=10)
+final_sony_forecast
+
+sony_set_model_sarima <- arima(sony_data$`Average of Closing Price in that week`, 
+                               order = c(2, 1, 2),seasonal = list(order = c(0, 1, 2), period = 52))
+sony_set_model_sarima
+
+final_sony_forecast_sarima <- forecast(sony_set_model_sarima,h=10)
+final_sony_forecast_sarima
+
+sony_data_var <- subset(sony_data[225:2332,])
+
+plot(sony_data_var$`Average of Opening Price in that week`)
+plot(sony_data_var$`Average of Closing Price in that week`)
+plot(sony_data_var$`Average of  VOLUME`)
+
+adf.test(sony_data_var$`Average of  VOLUME`)
+
+adf.test(sony_data_var$closing_pricediff)
+
+adf.test(sony_data_var$`Average of Opening Price in that week`)
+
+sony_data_var <- sony_data_var %>%
+  mutate(opening_pricediff =as.numeric(`Average of Opening Price in that week`) 
+         - lag(as.numeric(`Average of Opening Price in that week`)))
+
+sony_data_var <- sony_data_var[-1,]
+
+adf.test(sony_data_var$opening_pricediff)
+
+library(vars)
+
+minivar_sony <- cbind(closing_diff=sony_data_var$closing_pricediff,
+                 opening_diff=sony_data_var$opening_pricediff,
+                 avg_volume=sony_data_var$`Average of  VOLUME`)
+str(minivar)
+VARselect(minivar_sony,lag.max = 26,type = "const")
+
+dummy_data <- data.frame(dummy=sony_data$`Dummy for Failure`[226:2332])
+
+sony_var <- VAR(minivar_sony,p=25,exogen = dummy_data)
+sony_var
+
+plot(sony_var)
+
+# lets forecast 10 values a ahead
+# Create future dummy values as 0
+future_dummy <- matrix(0, nrow = 10, ncol = 1)
+future_dummy
+
+forecast <- predict(sony_var,n.ahead = 10, dumvar = future_dummy)
+forecast
+
+# let forecast the closing price upcoming weeks average
+
+last_closing <- tail(sony_data_var$`Average of Closing Price in that week`, 1)
+last_closing
+
+closing_diff_forecast <- forecast$fcst$closing_diff[, 1]   # Forecasted closing_diff
+
+# Undo differencing
+closing_forecast <- last_closing + cumsum(closing_diff_forecast)
+
+# Now closing_forecast contains the 10 original forecasted values.
+
+# Print them clearly one by one
+for (i in 1:length(closing_forecast)) {
+  cat("Forecast Step", i, ": ", closing_forecast[i], "\n")}
+
+residuals_var_sony <- residuals(sony_var)
+residuals_var_closing_sony <-residuals_var[,"closing_diff"]
+
+Box.test(residuals_var_closing_sony,lag = 20,type = "Ljung-Box")
