@@ -1,0 +1,254 @@
+rm(list = ls())
+install.packages("forecast")
+install.packages("quantmod")
+install.packages("haven")
+install.packages("dplR")
+install.packages("tseries")
+install.packages("smooth")
+install.packages("haven")
+install.packages("readxl")
+
+setwd("C:/Users/leela/OneDrive/Desktop/Time Series/Market Data/Market Data")
+
+# In this project we are forecasting two stocks one is "sony" and another one is "Take Two Interactive"
+# Now we forecast these stock prices by using some forecasting techniques, and we also want to measure the 
+# effect on stocks due to their bad games or acquisitions and bad outcomes by taking the a falure observation]
+# with dummy variables "0" & "1". If tbere is a bad failure the value is "1" which was taken six months of 
+# observation to control the effect
+
+library(readxl)
+
+taketwo_data <- read_excel("Taketwo.xlsx")
+
+plot(taketwo_data$`Average of Closing Price in that week`)
+
+library(ggplot2)
+
+ggplot(taketwo_data, aes(x = T, y = `Average of Closing Price in that week`)) +
+  geom_line(color = "red") +
+  labs(title = "Price over Time of TakeTwo",
+       x = "T",
+       y = "Closing Price") +
+  theme_minimal()
+
+library(tseries)
+
+adf.test(taketwo_data$`Average of Closing Price in that week`)
+
+library(dplyr)
+
+taketwo_data <- taketwo_data %>%
+  mutate(closing_pricediff = `Average of Closing Price in that week` - lag(`Average of Closing Price in that week`))
+
+# let us drop the NA values
+
+taketwo_data <- taketwo_data[-1,]
+
+adf.test(taketwo_data$closing_pricediff)
+
+ggplot(taketwo_data, aes(x = T, y = `closing_pricediff`)) +
+  geom_line(color = "red") +
+  labs(title = "Closing Price Diff vs T of TakeTwo",
+       x = "T",
+       y = "Closing Price Difference") +
+  theme_minimal()
+
+acf(taketwo_data$closing_pricediff)
+pacf(taketwo_data$closing_pricediff)
+
+taketwo_trainingset <- taketwo_data[1:1166,]
+
+taketwo_testset <- taketwo_data[1167:1457,]
+
+taketwo_ts <- ts(taketwo_trainingset$`Average of Closing Price in that week`, start = c(1997, 16), 
+                 end = c(2019, 22), frequency = 52)
+
+
+# let us try some different arima and auto arima and pick the best one using RMSE and MAE, AIC & BIC
+
+library(forecast)
+
+arima_model_1 <- arima(taketwo_ts,order=c(1,1,1))
+arima_model_1
+
+arima_model_2 <- arima(taketwo_ts,order=c(3,1,1))
+arima_model_2
+
+arima_model_3 <- arima(taketwo_ts,order=c(6,1,2))
+arima_model_3
+
+arima_model_4 <- arima(taketwo_ts,order=c(7,1,2))
+arima_model_4
+
+arima_model_5 <- arima(taketwo_ts,order=c(9,1,12))
+arima_model_5
+
+
+arima_model_6 <- auto.arima(taketwo_ts)
+arima_model_6
+
+
+# Now let us calcualte the AIC & BIC values
+
+AIC(arima_model_1)
+BIC(arima_model_1)
+
+AIC(arima_model_2)
+BIC(arima_model_2)
+
+AIC(arima_model_3)
+BIC(arima_model_3)
+
+AIC(arima_model_4)
+BIC(arima_model_4)
+
+AIC(arima_model_5)
+BIC(arima_model_5)
+
+AIC(arima_model_6)
+BIC(arima_model_6)
+
+forecast_arima_model1 <- forecast(arima_model_1,h=291)
+forecast_arima_model2 <- forecast(arima_model_2,h=291)
+forecast_arima_model3 <- forecast(arima_model_3,h=291)
+forecast_arima_model4 <- forecast(arima_model_4,h=291)
+forecast_arima_model5 <- forecast(arima_model_5,h=291)
+forecast_arima_model6 <- forecast(arima_model_6,h=291)
+
+
+taketwo_testset$forecast_values_model1 <- forecast_arima_model1$mean
+taketwo_testset$forecast_values_model2 <- forecast_arima_model2$mean
+taketwo_testset$forecast_values_model3 <- forecast_arima_model3$mean
+taketwo_testset$forecast_values_model4 <- forecast_arima_model4$mean
+taketwo_testset$forecast_values_model5 <- forecast_arima_model5$mean
+taketwo_testset$forecast_values_model6 <- forecast_arima_model6$mean
+
+
+RMSE_model1 <- sqrt(mean((taketwo_testset$`Average of Closing Price in that week`-
+                           taketwo_testset$forecast_values_model1)^2))
+RMSE_model1
+
+RMSE_model2 <- sqrt(mean((taketwo_testset$`Average of Closing Price in that week`-
+                           taketwo_testset$forecast_values_model2)^2))
+RMSE_model2
+
+RMSE_model3 <- sqrt(mean((taketwo_testset$`Average of Closing Price in that week`-
+                           taketwo_testset$forecast_values_model3)^2))
+RMSE_model3
+
+RMSE_model4 <- sqrt(mean((taketwo_testset$`Average of Closing Price in that week`-
+                           taketwo_testset$forecast_values_model4)^2))
+RMSE_model4
+
+RMSE_model5 <- sqrt(mean((taketwo_testset$`Average of Closing Price in that week`-
+                           taketwo_testset$forecast_values_model5)^2))
+RMSE_model5
+
+RMSE_model6 <- sqrt(mean((taketwo_testset$`Average of Closing Price in that week`-
+                           taketwo_testset$forecast_values_model6)^2))
+RMSE_model6
+
+
+MAE_model1 <- mean(abs(taketwo_testset$`Average of Closing Price in that week`-
+                         taketwo_testset$forecast_values_model1))
+MAE_model1
+
+MAE_model2 <- mean(abs(taketwo_testset$`Average of Closing Price in that week`-
+                         taketwo_testset$forecast_values_model2))
+MAE_model2
+
+MAE_model3 <- mean(abs(taketwo_testset$`Average of Closing Price in that week`-
+                         taketwo_testset$forecast_values_model3))
+MAE_model3
+
+MAE_model4 <- mean(abs(taketwo_testset$`Average of Closing Price in that week`-
+                         taketwo_testset$forecast_values_model4))
+MAE_model4
+
+MAE_model5 <- mean(abs(taketwo_testset$`Average of Closing Price in that week`-
+                         taketwo_testset$forecast_values_model5))
+MAE_model5
+
+MAE_model6 <- mean(abs(taketwo_testset$`Average of Closing Price in that week`-
+                         taketwo_testset$forecast_values_model6))
+MAE_model6
+
+Box.test(residuals(arima_model_5),lag = 20,type = "Ljung-Box")
+
+Box.test(residuals(arima_model_6),lag = 20,type = "Ljung-Box")
+
+final_ts <- ts(taketwo_data$`Average of Closing Price in that week`, start = c(1997, 16), 
+                 end = c(2025, 13), frequency = 52)
+
+final_arima <- arima(final_ts,order=c(9,1,12))
+final_arima_values <- forecast(final_arima,h=10)
+final_arima_values
+
+plot(residuals(final_arima))
+
+Box.test(residuals(final_arima),lag = 20,type = "Ljung-Box")
+
+plot(taketwo_data$`Average of Opening Price in that week`)
+plot(taketwo_data$`Average of Closing Price in that week`)
+plot(taketwo_data$`Average of Volume in that week`)
+
+adf.test(taketwo_data$`Average of Volume in that week`)
+
+adf.test(taketwo_data$closing_pricediff)
+
+adf.test(taketwo_data$`Average of Opening Price in that week`)
+
+taketwo_data <- taketwo_data %>%
+  mutate(opening_pricediff =as.numeric(`Average of Opening Price in that week`) 
+         - lag(as.numeric(`Average of Opening Price in that week`)))
+
+taketwo_data_var <- taketwo_data[-1,]
+
+adf.test(taketwo_data_var$opening_pricediff)
+
+library(vars)
+
+minivar_taketwo <- cbind(closing_diff=taketwo_data_var$closing_pricediff,
+                 opening_diff=taketwo_data_var$opening_pricediff,
+                 avg_volume=taketwo_data_var$`Average of Volume in that week`)
+str(minivar)
+VARselect(minivar_taketwo,lag.max = 25,type = "const")
+
+dummy_data <- data.frame(dummy=taketwo_data_var$`Dummy for Failure`)
+
+taketwo_var <- VAR(minivar_taketwo,p=11,exogen = dummy_data)
+taketwo_var
+
+plot(taketwo_var)
+
+# lets forecast 10 values a ahead
+# Create future dummy values as 0
+future_dummy <- matrix(0, nrow = 10, ncol = 1)
+future_dummy
+
+forecast <- predict(taketwo_var,n.ahead = 10, dumvar = future_dummy)
+forecast
+
+# let forecast the closing price upcoming weeks average
+
+last_closing <- tail(taketwo_data_var$`Average of Closing Price in that week`, 1)
+last_closing
+
+closing_diff_forecast <- forecast$fcst$closing_diff[, 1]   # Forecasted closing_diff
+
+# Undo differencing
+closing_forecast <- last_closing + cumsum(closing_diff_forecast)
+
+# Now closing_forecast contains the 10 original forecasted values.
+
+# Print them clearly one by one
+for (i in 1:length(closing_forecast)) {
+  cat("Forecast Step", i, ": ", closing_forecast[i], "\n")}
+
+residuals_var <- residuals(taketwo_var)
+residuals_var_closing <-residuals_var[,"closing_diff"]
+
+Box.test(residuals_var_closing,lag = 20,type = "Ljung-Box")
+
+
+
